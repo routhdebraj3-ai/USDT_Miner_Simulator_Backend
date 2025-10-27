@@ -349,7 +349,7 @@ app.patch('/admin/users/:id', authMiddleware, adminMiddleware, async (req, res) 
     const { id } = req.params;
 
     // <<< CHANGED: only allow these toggle fields to be updated via this endpoint
-    const allowed = ['referOn', 'disclaimerOn', 'adsOn'];
+    const allowed = ['referOn', 'rateUsOn', 'adsOn'];
     const updates = {};
 
     allowed.forEach((key) => {

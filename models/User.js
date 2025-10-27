@@ -110,7 +110,10 @@ const userSchema = new Schema({
   referOn: { type: Boolean, default: true },
 
   // whether the Disclaimer screen (or acceptance gate) is enabled / shown for this user
-  disclaimerOn: { type: Boolean, default: true },
+  disclaimerOn: { type: Boolean, default: false },
+
+  // whether the Rate Us screen (or acceptance gate) is enabled / shown for this user
+  rateUsOn: { type: Boolean, default: true },
 
   // whether ads are enabled for this user (if you want to disable ads for a user)
   adsOn: { type: Boolean, default: true },
