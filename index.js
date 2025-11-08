@@ -158,7 +158,7 @@ app.post('/login', async (req, res) => {
  * We verify idToken with Google's tokeninfo endpoint, then create or link a user.
  */
 app.post('/google-login', async (req, res) => {
-  // console.log('Received /google-login request with body:', req.body);
+  console.log('Received /google-login request with body ...');
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ message: 'idToken is required' });
 
@@ -845,6 +845,9 @@ app.post('/rewards/refer/claim', authMiddleware, async (req, res) => {
 
     // 🟩 optional analytics: increment referralsCount if you track invites
     if (user.referralsCount != null) user.referralsCount += 1;
+
+    // 🟠 turn off refer feature after claim
+    user.referOn = false;
 
     await user.save();
 
