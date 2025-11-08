@@ -422,52 +422,40 @@ app.get('/user-count', authMiddleware, async (req, res) => {
 
 
 // Example conversion factor from GH to USDT (set in config)
-const GH_TO_USDT = 0.000001; // <- adjust to your business rules
+const GH_TO_USDT = 0.000001;
 
 // start mining
 app.post('/mining/start', authMiddleware, async (req, res) => {
-  console.log("Mining start request received ....")
+  console.log("Mining start request received ....");
   const userId = req.userId;
   const now = Date.now();
   const sixtyMin = 60 * 60 * 1000;
 
-  // Atomic check-and-set: only set if mining.isActive !== true
-    const update = {
-      $setOnInsert: {}, // noop but structure for clarity
-      $set: {
-        'mining.isActive': true,
-        'mining.startTimeMs': now,
-        'mining.endTimeMs': now + sixtyMin,
-        'mining.lastUpdatedMs': now,
-        'mining.accumulatedGh': 0,
-        'mining.speedGhPerSec': 30,
-        'mining.extensionMs': 0
-      },
-      $inc: {}, // for counters if needed
-      $push: { 'mining.events': { type: 'start', at: now } }
-    };
+  // 1️⃣ Load the user first (we need it to finalize previous session)
+  const user = await User.findById(userId);
+  if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Use a filter that ensures we only start if not currently active
-    const filter = {
-      _id: userId,
-      $or: [
-        { 'mining.isActive': { $exists: false } },
-        { 'mining.isActive': false },
-        { 'mining.endTimeMs': { $lte: Date.now() } } // ended sessions considered inactive
-      ]
-    };
+  // 2️⃣ If an old session was active or has just ended, finalize it
+  if (user.mining?.isActive) {
+    user.finalizeMiningSession(now, GH_TO_USDT);
+    console.log('Finalized previous mining session, credited:', user.usdtBalance);
+  }
 
-    const opts = { new: true }; // return updated doc
-    const user = await User.findOneAndUpdate(filter, update, opts);
+  // 3️⃣ Start new mining session from scratch
+  user.mining.isActive = true;
+  user.mining.startTimeMs = now;
+  user.mining.endTimeMs = now + sixtyMin;
+  user.mining.lastUpdatedMs = now;
+  user.mining.accumulatedGh = 0;
+  user.mining.speedGhPerSec = 30;
+  user.mining.extensionMs = 0;
+  user.mining.events = (user.mining.events || []).concat([{ type: 'start', at: now }]);
 
-    if (!user) {
-      // either user missing or mining already active
-      const existing = await User.findById(userId).select('mining');
-      return res.status(409).json({ message: 'Already mining', mining: existing?.mining });
-    }
+  // 4️⃣ Save and return the fully updated user (including usdtBalance)
+  await user.save();
 
-    const snapshot = user.computeMiningSnapshot(now, GH_TO_USDT);
-    return res.status(200).json({ user: user.toJSON(), mining: snapshot });
+  const snapshot = user.computeMiningSnapshot(now, GH_TO_USDT);
+  return res.status(200).json({ user: user.toJSON(), mining: snapshot });
 });
 
 
