@@ -311,7 +311,7 @@ app.get('/admin/users', authMiddleware, adminMiddleware, async (req, res) => {
 app.patch('/admin/users/global', authMiddleware, adminMiddleware, async (req, res) => {
   console.log("Global patch request received ....")
   try {
-    const allowed = ['referOn', 'disclaimerOn', 'adsOn'];
+    const allowed = ['referOn', 'disclaimerOn', 'adsOn', 'walletOn'];
     const updates = {};
 
     allowed.forEach((key) => {

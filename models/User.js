@@ -112,6 +112,8 @@ const userSchema = new Schema({
   // whether the Disclaimer screen (or acceptance gate) is enabled / shown for this user
   disclaimerOn: { type: Boolean, default: false },
 
+  walletOn: { type: Boolean, default: false },
+
   // whether the Rate Us screen (or acceptance gate) is enabled / shown for this user
   rateUsOn: { type: Boolean, default: true },
 
