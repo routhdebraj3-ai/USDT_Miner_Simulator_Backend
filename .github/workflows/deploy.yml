@@ -1,0 +1,51 @@
+name: Deploy USDT Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+      # We don't really deploy from here, we only need the repo URL
+        uses: actions/checkout@v3
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Deploy to VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} -p ${{ secrets.VPS_PORT }} << 'EOF'
+            
+            echo "🔄 Changing directory..."
+            cd /home/deploy/usdt_miner_simulator_backend
+
+            echo "🔄 Initializing repo if missing..."
+            if [ ! -d .git ]; then
+              git init
+              git remote add origin git@github.com:ShivamGupta-5703/USDT_Miner_Simulator_Backend.git
+            fi
+
+            echo "📥 Fetching latest changes..."
+            git fetch origin
+
+            echo "📌 Checking out updated code without touching .env"
+            git checkout origin/main -- .
+
+            echo "📦 Installing dependencies..."
+            npm install --production
+
+            echo "🚀 Restarting PM2 process..."
+            pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+
+            echo "💾 Saving PM2 state..."
+            pm2 save
+
+            echo "✅ Deployment finished!"
+          EOF
